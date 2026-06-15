@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/rsvp-reader.html"
+    }
+  ]
+}

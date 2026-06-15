@@ -1,0 +1,17 @@
+{
+  "name": "blaze-reader",
+  "version": "1.0.0",
+  "description": "FlowRead - Smart RSVP Reader for enhanced reading speed",
+  "main": "rsvp-reader.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "rsvp",
+    "reader",
+    "speed-reading",
+    "flowread"
+  ],
+  "author": "",
+  "license": "MIT"
+}
