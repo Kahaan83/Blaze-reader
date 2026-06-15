@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowRead — Smart RSVP Reader</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #18181a;
+    --surface2: #222225;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --muted: #888884;
+    --accent: #e05a2b;
+    --accent2: #f0874d;
+    --green: #2ec07a;
+    --blue: #4a9eff;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --font: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ---- LANDING / SETUP ---- */
+  #setup-view {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 48px;
+  }
+  .brand-mark {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-mark svg { width: 18px; height: 18px; fill: #fff; }
+  .brand-name {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .brand-tag {
+    font-size: 12px; color: var(--muted); margin-left: 2px;
+  }
+  .lifetime-badge {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 6px 12px; background: var(--surface);
+  }
+  .lifetime-badge svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--green); }
+  .lifetime-badge .lt-val { color: var(--green); font-weight: 600; font-family: var(--mono); }
+  @media (max-width: 500px) {
+    .lifetime-badge { font-size: 11px; padding: 5px 10px; }
+  }
+
+  .hero-label {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 38px; font-weight: 600; letter-spacing: -0.03em;
+    line-height: 1.15; color: var(--text);
+    margin-bottom: 14px;
+  }
+  h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 16px; color: var(--muted); margin-bottom: 40px;
+    max-width: 480px; line-height: 1.6;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex; gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1; padding: 8px 12px;
+    font-size: 13px; font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: none; border-radius: 7px;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .tab.active { background: var(--surface2); color: var(--text); }
+
+  /* Input panels */
+  .input-panel { display: none; }
+  .input-panel.active { display: block; }
+
+  textarea#paste-input {
+    width: 100%; height: 160px; resize: vertical;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font); font-size: 14px;
+    border-radius: var(--radius); padding: 14px 16px;
+    outline: none; line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  textarea#paste-input:focus { border-color: var(--border2); }
+  textarea#paste-input::placeholder { color: var(--muted); }
+
+  .url-row {
+    display: flex; gap: 8px;
+  }
+  input#url-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font); font-size: 14px;
+    border-radius: var(--radius); padding: 11px 16px;
+    outline: none; transition: border-color 0.15s;
+  }
+  input#url-input:focus { border-color: var(--border2); }
+  input#url-input::placeholder { color: var(--muted); }
+
+  .fetch-btn {
+    padding: 11px 20px; background: var(--surface2);
+    border: 1px solid var(--border2); color: var(--text);
+    border-radius: var(--radius); font-size: 14px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: background 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fetch-btn:hover { background: var(--border2); }
+  .fetch-btn svg { width: 14px; height: 14px; }
+
+  .drop-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer; transition: all 0.15s;
+    background: var(--surface);
+  }
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(224,90,43,0.05); }
+  .drop-icon { margin-bottom: 12px; color: var(--muted); }
+  .drop-icon svg { width: 32px; height: 32px; }
+  .drop-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .drop-sub { font-size: 13px; color: var(--muted); }
+  #pdf-file { display: none; }
+
+  .status-line {
+    font-size: 13px; color: var(--green); margin-top: 10px;
+    min-height: 20px; display: flex; align-items: center; gap: 6px;
+  }
+  .status-line svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .status-line.err { color: #e05a5a; }
+
+  /* Settings */
+  .settings-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-top: 28px;
+  }
+  .setting-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .setting-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+
+  .pill-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pill {
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border); color: var(--muted);
+    background: transparent; transition: all 0.15s;
+  }
+  .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .wpm-row { display: flex; align-items: center; gap: 10px; }
+  input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 4px; background: var(--surface2);
+    border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: none;
+  }
+  .wpm-val {
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    color: var(--accent); min-width: 68px; text-align: right;
+  }
+
+  .color-row { display: flex; gap: 8px; align-items: center; }
+  .cswatch {
+    width: 22px; height: 22px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+  }
+  .cswatch.active { border-color: #fff; transform: scale(1.2); }
+
+  .full-span { grid-column: 1 / -1; }
+
+  /* Start button */
+  #start-btn {
+    width: 100%; margin-top: 24px; padding: 14px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius);
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  #start-btn:hover { opacity: 0.9; }
+  #start-btn:active { transform: scale(0.99); }
+  #start-btn svg { width: 18px; height: 18px; }
+
+  /* ---- READER ---- */
+  #reader-view {
+    display: none;
+    max-width: 800px; margin: 0 auto;
+    padding: 24px 24px 60px;
+  }
+
+  .reader-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .reader-brand { font-size: 15px; font-weight: 600; color: var(--muted); }
+
+  .reader-meta {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .meta-badge {
+    font-size: 12px; padding: 4px 10px;
+    border: 1px solid var(--border2); border-radius: 20px;
+    color: var(--muted);
+  }
+  .meta-badge.mode-focus { border-color: var(--accent); color: var(--accent2); }
+  .meta-badge.mode-skim { border-color: var(--blue); color: var(--blue); }
+
+  .back-btn {
+    font-size: 13px; color: var(--muted); background: none;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 6px 12px; cursor: pointer; transition: color 0.15s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .back-btn svg { width: 13px; height: 13px; }
+  .back-btn:hover { color: var(--text); }
+
+  /* Progress */
+  .prog-bar-wrap {
+    height: 3px; background: var(--surface2);
+    border-radius: 2px; overflow: hidden; margin-bottom: 8px;
+  }
+  #prog-bar {
+    height: 100%; width: 0%; background: var(--accent);
+    transition: width 0.15s linear; border-radius: 2px;
+  }
+  .prog-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px;
+  }
+  #prog-pct { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  #prog-eta { font-size: 12px; color: var(--muted); }
+  #adaptive-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: rgba(46,192,122,0.12); color: var(--green);
+    border: 1px solid rgba(46,192,122,0.25);
+  }
+
+  /* Display */
+  #display-zone {
+    min-height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); margin-bottom: 24px;
+    position: relative; padding: 32px 24px;
+  }
+  #word-display {
+    font-size: 46px; font-weight: 500; letter-spacing: -0.02em;
+    color: var(--text); text-align: center; line-height: 1.2;
+    max-width: 600px;
+  }
+  #pause-label {
+    position: absolute; top: 12px; right: 14px;
+    font-size: 11px; color: var(--muted); display: none;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  #wpm-live-label {
+    position: absolute; bottom: 12px; right: 14px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+
+  /* Controls */
+  .reader-controls {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .rcbtn {
+    padding: 9px 18px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text);
+    transition: background 0.12s;
+  }
+  .rcbtn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .rcbtn:hover { background: var(--surface2); }
+  .rcbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rcbtn.primary:hover { opacity: 0.9; }
+
+  .speed-control {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  .speed-control label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  #live-wpm-input { flex: 1; }
+  #live-wpm-val { font-family: var(--mono); font-size: 13px; color: var(--accent); min-width: 68px; text-align: right; }
+
+  /* Recall overlay */
+  #recall-panel {
+    display: none;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 24px;
+    margin-bottom: 20px;
+  }
+  .recall-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .recall-eyebrow {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  #recall-q {
+    font-size: 17px; font-weight: 500; color: var(--text);
+    line-height: 1.5; margin-bottom: 18px;
+  }
+
+  .recall-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .recall-opt {
+    padding: 12px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); font-size: 14px; cursor: pointer;
+    text-align: left; transition: all 0.15s; display: flex; gap: 10px;
+    align-items: flex-start;
+  }
+  .recall-opt:hover { border-color: var(--border2); background: var(--surface); }
+  .recall-opt.correct { border-color: var(--green); background: rgba(46,192,122,0.08); color: var(--green); }
+  .recall-opt.wrong { border-color: #e05a5a; background: rgba(224,90,90,0.08); color: #e05a5a; }
+  .recall-opt .opt-key {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--muted); flex-shrink: 0; margin-top: 1px;
+  }
+  .recall-opt.correct .opt-key { color: var(--green); }
+  .recall-opt.wrong .opt-key { color: #e05a5a; }
+
+  #recall-feedback {
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+    margin-bottom: 14px; min-height: 0px;
+  }
+  .recall-actions { display: flex; gap: 8px; }
+  .rca-btn {
+    padding: 8px 18px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text); transition: background 0.12s;
+  }
+  .rca-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rca-btn:hover { background: var(--surface2); }
+  .rca-btn.primary:hover { opacity: 0.9; }
+
+  /* Completion */
+  #done-panel {
+    display: none; text-align: center; padding: 40px 20px;
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+  #done-panel h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  #done-panel p { color: var(--muted); font-size: 15px; }
+  .done-stats {
+    display: flex; justify-content: center; gap: 32px; margin: 24px 0;
+    flex-wrap: wrap;
+  }
+  .done-stat { text-align: center; }
+  .done-stat-val { font-size: 28px; font-weight: 600; color: var(--accent); font-family: var(--mono); }
+  .done-stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 500px) {
+    h1 { font-size: 28px; }
+    .settings-grid { grid-template-columns: 1fr; }
+    #word-display { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<div id="setup-view">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 20 20"><path d="M3 10 L10 3 L17 10 L10 17Z" opacity="0.3"/><path d="M6 10 L10 6 L14 10 L10 14Z"/></svg>
+    </div>
+    <span class="brand-name">FlowRead</span>
+    <span class="brand-tag">beta</span>
+    <div class="lifetime-badge" id="lifetime-badge" title="Total time saved across all sessions">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>
+      <span><span class="lt-val" id="lifetime-val">0s</span> saved lifetime</span>
+    </div>
+  </div>
+
+  <div class="hero-label">Smart RSVP Reader</div>
+  <h1>Read faster.<br><span>Remember more.</span></h1>
+  <p class="hero-sub">Flash text at speed with adaptive pacing, focal anchoring, and AI-powered recall checks that keep your brain engaged.</p>
+
+  <!-- Source tabs -->
+  <div class="tab-bar">
+    <button class="tab active" data-tab="paste">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><line x1="6" y1="7" x2="14" y2="7"/><line x1="6" y1="10" x2="14" y2="10"/><line x1="6" y1="13" x2="11" y2="13"/></svg>
+      Paste text
+    </button>
+    <button class="tab" data-tab="url">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 3c-2.5 2-2.5 12 0 14M10 3c2.5 2 2.5 12 0 14M3 10h14"/></svg>
+      URL / article
+    </button>
+    <button class="tab" data-tab="pdf">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4"/><path d="M7 10h6M7 13h4"/></svg>
+      Upload PDF
+    </button>
+  </div>
+
+  <div id="tab-paste" class="input-panel active">
+    <textarea id="paste-input" placeholder="Paste any text here — an article, essay, study notes, anything…"></textarea>
+  </div>
+
+  <div id="tab-url" class="input-panel">
+    <div class="url-row">
+      <input type="url" id="url-input" placeholder="https://en.wikipedia.org/wiki/...">
+      <button class="fetch-btn" id="fetch-url-btn">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3v14M3 10h14"/></svg>
+        Fetch
+      </button>
+    </div>
+    <div class="status-line" id="url-status"></div>
+  </div>
+
+  <div id="tab-pdf" class="input-panel">
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4h10l6 6v18a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z"/><path d="M18 4v6h6"/><path d="M16 14v8M12 18l4-4 4 4"/></svg>
+      </div>
+      <div class="drop-title">Drop your PDF here</div>
+      <div class="drop-sub">or click to browse</div>
+    </div>
+    <input type="file" id="pdf-file" accept=".pdf">
+    <div class="status-line" id="pdf-status"></div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-grid">
+    <div class="setting-card">
+      <div class="setting-label">Starting speed</div>
+      <div class="wpm-row">
+        <input type="range" id="wpm-input" min="100" max="800" step="10" value="250">
+        <span class="wpm-val" id="wpm-val">250 wpm</span>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">Adaptive speed</div>
+      <div class="pill-group">
+        <button class="pill active" data-adaptive="on">On — ramps up</button>
+        <button class="pill" data-adaptive="off">Off</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">Display unit</div>
+      <div class="pill-group">
+        <button class="pill active" data-unit="word">Word</button>
+        <button class="pill" data-unit="phrase">Phrase (3 words)</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">Reading mode</div>
+      <div class="pill-group">
+        <button class="pill active" data-rmode="focus">Focus</button>
+        <button class="pill" data-rmode="skim">Skim</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">Punctuation pauses</div>
+      <div class="pill-group">
+        <button class="pill active" data-pauses="on">Longer</button>
+        <button class="pill" data-pauses="off">Off</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">Active recall</div>
+      <div class="pill-group">
+        <button class="pill active" data-recall="on">On</button>
+        <button class="pill" data-recall="off">Off</button>
+      </div>
+    </div>
+
+    <div class="setting-card full-span">
+      <div class="setting-label">Focal letter color</div>
+      <div class="color-row">
+        <div class="cswatch active" data-fc="#e05a2b" style="background:#e05a2b"></div>
+        <div class="cswatch" data-fc="#4a9eff" style="background:#4a9eff"></div>
+        <div class="cswatch" data-fc="#2ec07a" style="background:#2ec07a"></div>
+        <div class="cswatch" data-fc="#e0c02b" style="background:#e0c02b"></div>
+        <div class="cswatch" data-fc="#c05aff" style="background:#c05aff"></div>
+        <div class="cswatch" data-fc="#ff5a8a" style="background:#ff5a8a"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="start-btn">
+    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l12 6-12 6V4z"/></svg>
+    Start reading
+  </button>
+</div>
+
+<!-- ============ READER ============ -->
+<div id="reader-view">
+  <div class="reader-nav">
+    <span class="reader-brand">FlowRead</span>
+    <div class="reader-meta">
+      <span class="meta-badge" id="mode-badge">Focus · Word</span>
+      <span id="adaptive-badge" style="display:none">↑ Adapting</span>
+      <button class="back-btn" id="back-btn">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4l-6 6 6 6"/></svg>
+        Back
+      </button>
+    </div>
+  </div>
+
+  <div class="prog-bar-wrap"><div id="prog-bar"></div></div>
+  <div class="prog-meta">
+    <span id="prog-pct">0%</span>
+    <span id="prog-eta">—</span>
+  </div>
+
+  <div id="display-zone">
+    <div id="word-display">—</div>
+    <span id="pause-label">PAUSED</span>
+    <span id="wpm-live-label">— wpm</span>
+  </div>
+
+  <div class="reader-controls">
+    <button class="rcbtn primary" id="play-pause-btn">
+      <svg id="pp-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4h3v12H5zm7 0h3v12h-3z"/></svg>
+      <span id="pp-label">Pause</span>
+    </button>
+    <button class="rcbtn" id="replay-btn">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10a6 6 0 106-6H4"/><path d="M4 6v4h4"/></svg>
+      Replay 10s
+    </button>
+  </div>
+
+  <div class="speed-control">
+    <label>Speed</label>
+    <input type="range" id="live-wpm-input" min="100" max="900" step="10" value="250">
+    <span id="live-wpm-val">250 wpm</span>
+  </div>
+
+  <!-- Recall panel -->
+  <div id="recall-panel">
+    <div class="recall-header">
+      <div class="recall-eyebrow">Quick check</div>
+    </div>
+    <div id="recall-q">Loading question…</div>
+    <div class="recall-options" id="recall-options"></div>
+    <div id="recall-feedback"></div>
+    <div class="recall-actions">
+      <button class="rca-btn" id="skip-recall-btn">Skip</button>
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div id="done-panel">
+    <h2>✓ Finished</h2>
+    <p>You've reached the end of the text.</p>
+    <div class="done-stats">
+      <div class="done-stat">
+        <div class="done-stat-val" id="done-avg-wpm">—</div>
+        <div class="done-stat-label">avg wpm</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-val" id="done-recalls">—</div>
+        <div class="done-stat-label">recall checks</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-val" id="done-correct">—</div>
+        <div class="done-stat-label">correct answers</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-val" id="done-time-saved">—</div>
+        <div class="done-stat-label">time saved</div>
+      </div>
+    </div>
+    <p id="done-time-detail" style="font-size:13px; color:var(--muted); margin-top:-12px; margin-bottom: 8px;"></p>
+    <button class="rca-btn primary" id="done-back-btn" style="margin: 16px auto 0; display:block;">Read another</button>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ---- STATE ---- */
+let sourceText = '';
+let tokens = [];
+let idx = 0;
+let timer = null;
+let isPlaying = false;
+
+// settings
+let wpm = 250;
+let targetWpm = 250;
+let adaptiveOn = true;
+let displayUnit = 'word';
+let readingMode = 'focus';
+let pausesOn = true;
+let recallOn = true;
+let focalColor = '#e05a2b';
+
+// session tracking
+let recallCount = 0;
+let correctCount = 0;
+let wpmSamples = [];
+let recallActive = false;
+let recallBuffer = '';
+let recallAnswered = false;
+const RECALL_EVERY = 60; // words
+const NORMAL_READING_WPM = 200; // baseline for "normal" silent reading speed
+let sessionMs = 0;          // active RSVP reading time (ms), excludes pauses & recall
+let totalWordsInSession = 0;
+let wordsPerToken = 1;
+
+/* ---- TAB SWITCHING ---- */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---- PILL TOGGLES ---- */
+function pillGroup(attr, cb) {
+  document.querySelectorAll(`[data-${attr}]`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(`[data-${attr}]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cb(btn.dataset[attr.replace(/-([a-z])/g, (_, c) => c.toUpperCase())]);
+    });
+  });
+}
+pillGroup('adaptive', v => { adaptiveOn = v === 'on'; });
+pillGroup('unit', v => { displayUnit = v; });
+pillGroup('rmode', v => { readingMode = v; });
+pillGroup('pauses', v => { pausesOn = v === 'on'; });
+pillGroup('recall', v => { recallOn = v === 'on'; });
+
+document.querySelectorAll('.cswatch').forEach(s => {
+  s.addEventListener('click', () => {
+    document.querySelectorAll('.cswatch').forEach(x => x.classList.remove('active'));
+    s.classList.add('active');
+    focalColor = s.dataset.fc;
+  });
+});
+
+const wpmInput = document.getElementById('wpm-input');
+const wpmVal = document.getElementById('wpm-val');
+wpmInput.addEventListener('input', () => {
+  wpm = parseInt(wpmInput.value);
+  targetWpm = wpm;
+  wpmVal.textContent = wpm + ' wpm';
+});
+
+/* ---- PDF ---- */
+const dropZone = document.getElementById('drop-zone');
+const pdfFile = document.getElementById('pdf-file');
+const pdfStatus = document.getElementById('pdf-status');
+
+dropZone.addEventListener('click', () => pdfFile.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') extractPDF(f);
+});
+pdfFile.addEventListener('change', () => { if (pdfFile.files[0]) extractPDF(pdfFile.files[0]); });
+
+async function extractPDF(file) {
+  pdfStatus.className = 'status-line';
+  pdfStatus.innerHTML = iconSpin() + ' Extracting text…';
+  try {
+    const ab = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(s => s.str).join(' ') + '\n';
+    }
+    sourceText = text.trim();
+    pdfStatus.innerHTML = iconCheck() + ` Loaded — ${pdf.numPages} pages, ~${wordCount(sourceText).toLocaleString()} words`;
+    pdfStatus.className = 'status-line';
+  } catch(e) {
+    pdfStatus.innerHTML = iconX() + ' Could not read PDF.';
+    pdfStatus.className = 'status-line err';
+  }
+}
+
+/* ---- URL FETCH ---- */
+const urlStatus = document.getElementById('url-status');
+document.getElementById('fetch-url-btn').addEventListener('click', fetchURL);
+
+async function fetchURL() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  urlStatus.className = 'status-line';
+  urlStatus.innerHTML = iconSpin() + ' Fetching…';
+  try {
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    const html = data.contents;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    ['script','style','nav','header','footer','aside','figure','figcaption'].forEach(tag => {
+      doc.querySelectorAll(tag).forEach(el => el.remove());
+    });
+    const main = doc.querySelector('article, main, .content, .post-content, #content') || doc.body;
+    let text = main ? main.innerText || main.textContent : doc.body.textContent;
+    text = text.replace(/\s+/g, ' ').trim();
+    if (text.length < 100) throw new Error('No readable content found');
+    sourceText = text;
+    urlStatus.innerHTML = iconCheck() + ` Loaded — ~${wordCount(sourceText).toLocaleString()} words`;
+  } catch(e) {
+    urlStatus.innerHTML = iconX() + ' Could not fetch. Try pasting the text instead.';
+    urlStatus.className = 'status-line err';
+  }
+}
+
+/* ---- TOKENIZE ---- */
+function tokenize(text) {
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+  if (displayUnit === 'phrase') {
+    const chunks = [];
+    for (let i = 0; i < words.length; i += 3) chunks.push(words.slice(i, i+3).join(' '));
+    return chunks;
+  }
+  return words;
+}
+
+function wordCount(text) {
+  return text.trim().split(/\s+/).length;
+}
+
+/* ---- ADAPTIVE SPEED ---- */
+function getAdaptiveWpm() {
+  if (!adaptiveOn) return targetWpm;
+  const elapsed = idx / Math.max(tokens.length, 1);
+  // ramp from 70% of target → 110% over first 40% of text, then hold
+  const rampFactor = Math.min(1, elapsed / 0.4);
+  const lo = targetWpm * 0.7;
+  const hi = targetWpm * 1.1;
+  return Math.round(lo + (hi - lo) * rampFactor);
+}
+
+function getDelay(token) {
+  const currentWpm = getAdaptiveWpm();
+  wpm = currentWpm;
+  document.getElementById('wpm-live-label').textContent = currentWpm + ' wpm';
+  document.getElementById('live-wpm-input').value = currentWpm;
+  document.getElementById('live-wpm-val').textContent = currentWpm + ' wpm';
+  wpmSamples.push(currentWpm);
+
+  const base = 60000 / currentWpm;
+  const skimMult = readingMode === 'skim' ? 0.7 : 1.0;
+  let mult = skimMult;
+  if (pausesOn) {
+    if (/[.!?]$/.test(token)) mult *= (readingMode === 'focus' ? 2.4 : 1.4);
+    else if (/[,;:]$/.test(token)) mult *= (readingMode === 'focus' ? 1.5 : 1.15);
+    if (token.replace(/\s/g,'').length > 9) mult *= 1.15;
+  }
+  return base * mult;
+}
+
+/* ---- RENDER WORD ---- */
+function focalIdx(word) {
+  const l = word.replace(/[^a-zA-Z]/g,'').length;
+  if (l <= 1) return 0;
+  if (l <= 5) return 1;
+  if (l <= 9) return 2;
+  return 3;
+}
+
+function renderToken(token) {
+  const words = token.split(' ');
+  const rendered = words.map(w => {
+    const fi = focalIdx(w);
+    const before = w.slice(0, fi);
+    const focal = w[fi] || '';
+    const after = w.slice(fi+1);
+    return `${escHtml(before)}<span style="color:${focalColor}">${escHtml(focal)}</span>${escHtml(after)}`;
+  });
+  document.getElementById('word-display').innerHTML = rendered.join('&nbsp; ');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ---- PROGRESS ---- */
+function updateProgress() {
+  const pct = tokens.length ? (idx / tokens.length * 100) : 0;
+  document.getElementById('prog-bar').style.width = pct.toFixed(1) + '%';
+  document.getElementById('prog-pct').textContent = Math.round(pct) + '%';
+  const remWords = (tokens.length - idx) * wordsPerToken;
+  const secsLeft = Math.round((remWords * 60) / Math.max(getAdaptiveWpm(), 1));
+  document.getElementById('prog-eta').textContent = secsLeft < 60 ? secsLeft + 's left' : Math.ceil(secsLeft/60) + ' min left';
+}
+
+/* ---- SCHEDULER ---- */
+function scheduleNext() {
+  if (idx >= tokens.length) { finish(); return; }
+  const token = tokens[idx];
+  const delay = getDelay(token);
+  timer = setTimeout(() => {
+    renderToken(token);
+    updateProgress();
+    idx++;
+    sessionMs += delay;
+    if (adaptiveOn) {
+      const badge = document.getElementById('adaptive-badge');
+      badge.style.display = '';
+      badge.textContent = '↑ ' + getAdaptiveWpm() + ' wpm';
+    }
+    if (recallOn && !recallActive && idx > 0 && idx % RECALL_EVERY === 0 && idx < tokens.length) {
+      triggerRecall();
+    } else {
+      scheduleNext();
+    }
+  }, delay);
+}
+
+function pause() {
+  isPlaying = false;
+  clearTimeout(timer);
+  document.getElementById('pause-label').style.display = 'block';
+  document.getElementById('pp-icon').innerHTML = '<path d="M6 4l12 6-12 6V4z"/>';
+  document.getElementById('pp-label').textContent = 'Resume';
+}
+
+function resume() {
+  if (recallActive) return;
+  isPlaying = true;
+  document.getElementById('pause-label').style.display = 'none';
+  document.getElementById('pp-icon').innerHTML = '<path d="M5 4h3v12H5zm7 0h3v12h-3z"/>';
+  document.getElementById('pp-label').textContent = 'Pause';
+  scheduleNext();
+}
+
+/* ---- RECALL ---- */
+const recallPanel = document.getElementById('recall-panel');
+const recallQ = document.getElementById('recall-q');
+const recallOpts = document.getElementById('recall-options');
+const recallFeedback = document.getElementById('recall-feedback');
+
+const RECALL_TYPES = [
+  'main idea',
+  'a specific detail or fact',
+  'the sequence of events or steps',
+  'a comparison or contrast made',
+  'the cause and effect relationship',
+  'an example or analogy used',
+  'a definition or concept introduced',
+];
+
+async function triggerRecall() {
+  recallActive = true;
+  recallAnswered = false;
+  pause();
+  recallPanel.style.display = 'block';
+  recallFeedback.textContent = '';
+  recallOpts.innerHTML = '';
+  recallQ.textContent = 'Generating question…';
+
+  const start = Math.max(0, idx - RECALL_EVERY);
+  recallBuffer = tokens.slice(start, idx).join(' ');
+
+  const qType = RECALL_TYPES[recallCount % RECALL_TYPES.length];
+  recallCount++;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `You are a reading comprehension assistant. Given this passage, create a multiple-choice question focused specifically on: "${qType}".
+
+Passage:
+${recallBuffer}
+
+Respond ONLY with valid JSON (no markdown, no backticks) in this exact format:
+{
+  "question": "your question here",
+  "options": ["option A text", "option B text", "option C text", "option D text"],
+  "correct": 0,
+  "explanation": "one sentence explaining why this is correct and what the others miss"
+}
+
+Rules:
+- correct is the 0-based index of the right answer
+- Make wrong options plausible but clearly incorrect on reflection
+- Keep each option under 15 words
+- Question should be answerable only if the passage was read`
+        }]
+      })
+    });
+    const data = await res.json();
+    let raw = data.content.map(c => c.text || '').join('').trim();
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+    renderRecall(parsed);
+  } catch(e) {
+    recallQ.textContent = 'What was the main point of what you just read?';
+    renderFallbackRecall();
+  }
+}
+
+function renderRecall(data) {
+  recallQ.textContent = data.question;
+  recallOpts.innerHTML = '';
+  const keys = ['A', 'B', 'C', 'D'];
+  data.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'recall-opt';
+    btn.innerHTML = `<span class="opt-key">${keys[i]}</span><span>${escHtml(opt)}</span>`;
+    btn.addEventListener('click', () => {
+      if (recallAnswered) return;
+      recallAnswered = true;
+      const isCorrect = i === data.correct;
+      if (isCorrect) correctCount++;
+      document.querySelectorAll('.recall-opt').forEach((b, j) => {
+        if (j === data.correct) b.classList.add('correct');
+        else if (j === i && !isCorrect) b.classList.add('wrong');
+      });
+      recallFeedback.textContent = data.explanation;
+      setTimeout(closeRecall, 550);
+    });
+    recallOpts.appendChild(btn);
+  });
+}
+
+function renderFallbackRecall() {
+  recallOpts.innerHTML = '';
+  const opts = ['I understood the main ideas well', 'I got the gist but missed details', 'I was distracted / need to reread', 'This was new and complex for me'];
+  opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'recall-opt';
+    btn.innerHTML = `<span class="opt-key">${i+1}</span><span>${escHtml(opt)}</span>`;
+    btn.addEventListener('click', () => {
+      if (recallAnswered) return;
+      recallAnswered = true;
+      btn.classList.add('correct');
+      setTimeout(closeRecall, 400);
+    });
+    recallOpts.appendChild(btn);
+  });
+}
+
+document.getElementById('skip-recall-btn').addEventListener('click', closeRecall);
+
+function closeRecall() {
+  recallPanel.style.display = 'none';
+  recallActive = false;
+  recallAnswered = false;
+  resume();
+}
+
+/* ---- FINISH ---- */
+function finish() {
+  isPlaying = false;
+  clearTimeout(timer);
+  document.getElementById('display-zone').style.display = 'none';
+  document.querySelectorAll('.reader-controls, .speed-control').forEach(el => el.style.display = 'none');
+  recallPanel.style.display = 'none';
+  const avgWpm = wpmSamples.length ? Math.round(wpmSamples.reduce((a,b)=>a+b,0)/wpmSamples.length) : wpm;
+  document.getElementById('done-avg-wpm').textContent = avgWpm;
+  document.getElementById('done-recalls').textContent = recallCount;
+  document.getElementById('done-correct').textContent = recallCount > 0 ? `${correctCount}/${recallCount}` : '—';
+
+  // Time saved vs reading at a normal pace
+  const normalSecs = (totalWordsInSession / NORMAL_READING_WPM) * 60;
+  const rsvpSecs = sessionMs / 1000;
+  const savedSecs = Math.max(0, normalSecs - rsvpSecs);
+  document.getElementById('done-time-saved').textContent = formatDuration(savedSecs);
+  document.getElementById('done-time-detail').textContent =
+    `You read this in ${formatDuration(rsvpSecs)} — normally that's about ${formatDuration(normalSecs)} at ${NORMAL_READING_WPM} wpm.`;
+
+  addLifetimeSaved(savedSecs);
+  updateLifetimeBadge();
+
+  document.getElementById('done-panel').style.display = 'block';
+}
+
+/* ---- TIME FORMATTING & LIFETIME TRACKING ---- */
+function formatDuration(secs) {
+  secs = Math.round(secs);
+  if (secs < 60) return secs + 's';
+  const mins = Math.floor(secs / 60);
+  const rem = secs % 60;
+  if (mins < 60) return rem ? `${mins}m ${rem}s` : `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return remMins ? `${hrs}h ${remMins}m` : `${hrs}h`;
+}
+
+const LIFETIME_KEY = 'flowread_lifetime_saved_secs';
+
+function getLifetimeSaved() {
+  const v = parseFloat(localStorage.getItem(LIFETIME_KEY));
+  return isNaN(v) ? 0 : v;
+}
+
+function addLifetimeSaved(secs) {
+  const total = getLifetimeSaved() + secs;
+  localStorage.setItem(LIFETIME_KEY, String(total));
+}
+
+function updateLifetimeBadge() {
+  document.getElementById('lifetime-val').textContent = formatDuration(getLifetimeSaved());
+}
+
+updateLifetimeBadge();
+
+/* ---- START ---- */
+document.getElementById('start-btn').addEventListener('click', () => {
+  let text = '';
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'paste') text = document.getElementById('paste-input').value.trim();
+  else text = sourceText.trim();
+
+  if (!text) {
+    alert('Please add some text to read first.');
+    return;
+  }
+
+  tokens = tokenize(text);
+  idx = 0;
+  recallActive = false;
+  recallAnswered = false;
+  recallCount = 0;
+  correctCount = 0;
+  wpmSamples = [];
+  sessionMs = 0;
+  totalWordsInSession = wordCount(text);
+  wordsPerToken = displayUnit === 'phrase' ? 3 : 1;
+  targetWpm = parseInt(document.getElementById('wpm-input').value);
+  wpm = adaptiveOn ? Math.round(targetWpm * 0.7) : targetWpm;
+
+  document.getElementById('live-wpm-input').value = wpm;
+  document.getElementById('live-wpm-val').textContent = wpm + ' wpm';
+  document.getElementById('wpm-live-label').textContent = wpm + ' wpm';
+
+  const modeText = (readingMode === 'focus' ? 'Focus' : 'Skim') + ' · ' + (displayUnit === 'word' ? 'Word' : 'Phrase');
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = modeText;
+  badge.className = 'meta-badge mode-' + readingMode;
+
+  document.getElementById('adaptive-badge').style.display = adaptiveOn ? '' : 'none';
+  document.getElementById('display-zone').style.display = 'flex';
+  document.querySelectorAll('.reader-controls, .speed-control').forEach(el => el.style.display = '');
+  document.getElementById('done-panel').style.display = 'none';
+  recallPanel.style.display = 'none';
+  document.getElementById('pause-label').style.display = 'none';
+  document.getElementById('word-display').textContent = '—';
+  document.getElementById('prog-bar').style.width = '0%';
+  document.getElementById('prog-pct').textContent = '0%';
+  document.getElementById('pp-icon').innerHTML = '<path d="M5 4h3v12H5zm7 0h3v12h-3z"/>';
+  document.getElementById('pp-label').textContent = 'Pause';
+
+  document.getElementById('setup-view').style.display = 'none';
+  document.getElementById('reader-view').style.display = 'block';
+  window.scrollTo(0, 0);
+
+  isPlaying = true;
+  scheduleNext();
+});
+
+/* ---- CONTROLS ---- */
+document.getElementById('play-pause-btn').addEventListener('click', () => {
+  if (isPlaying) pause(); else resume();
+});
+
+document.getElementById('replay-btn').addEventListener('click', () => {
+  clearTimeout(timer);
+  const wordsBack = Math.round((10 * wpm) / 60);
+  const tokensBack = Math.max(1, Math.round(wordsBack / wordsPerToken));
+  idx = Math.max(0, idx - tokensBack);
+  updateProgress();
+  if (isPlaying) scheduleNext();
+  else { renderToken(tokens[idx] || '—'); }
+});
+
+document.getElementById('live-wpm-input').addEventListener('input', function() {
+  targetWpm = parseInt(this.value);
+  wpm = targetWpm;
+  document.getElementById('live-wpm-val').textContent = targetWpm + ' wpm';
+  document.getElementById('wpm-live-label').textContent = targetWpm + ' wpm';
+  if (isPlaying) { clearTimeout(timer); scheduleNext(); }
+});
+
+document.getElementById('back-btn').addEventListener('click', stopAndGoBack);
+document.getElementById('done-back-btn').addEventListener('click', stopAndGoBack);
+
+function stopAndGoBack() {
+  clearTimeout(timer);
+  isPlaying = false;
+  recallActive = false;
+  sourceText = '';
+  document.getElementById('reader-view').style.display = 'none';
+  document.getElementById('setup-view').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+/* ---- KEYBOARD ---- */
+document.addEventListener('keydown', e => {
+  if (document.getElementById('reader-view').style.display !== 'block') return;
+  if (recallActive) return;
+  if (e.code === 'Space') { e.preventDefault(); if (isPlaying) pause(); else resume(); }
+  if (e.code === 'ArrowLeft') document.getElementById('replay-btn').click();
+});
+
+/* ---- HELPERS ---- */
+function iconCheck() { return `<svg viewBox="0 0 16 16" fill="none" stroke="#2ec07a" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><path d="M3 8l3 3 7-7"/></svg>`; }
+function iconX() { return `<svg viewBox="0 0 16 16" fill="none" stroke="#e05a5a" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><path d="M4 4l8 8M12 4l-8 8"/></svg>`; }
+function iconSpin() { return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;animation:spin 1s linear infinite"><circle cx="8" cy="8" r="6" stroke-dasharray="24" stroke-dashoffset="8"/></svg><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`; }
+</script>
+</body>
+</html>
