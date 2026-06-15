@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlowRead — Smart RSVP Reader</title>
+<title>Blaze Reader — Smart RSVP Reader</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
@@ -428,7 +428,7 @@
     <div class="brand-mark">
       <svg viewBox="0 0 20 20"><path d="M3 10 L10 3 L17 10 L10 17Z" opacity="0.3"/><path d="M6 10 L10 6 L14 10 L10 14Z"/></svg>
     </div>
-    <span class="brand-name">FlowRead</span>
+    <span class="brand-name">Blaze Reader</span>
     <span class="brand-tag">beta</span>
     <div class="lifetime-badge" id="lifetime-badge" title="Total time saved across all sessions">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>
@@ -555,7 +555,7 @@
 <!-- ============ READER ============ -->
 <div id="reader-view">
   <div class="reader-nav">
-    <span class="reader-brand">FlowRead</span>
+    <span class="reader-brand">Blaze Reader</span>
     <div class="reader-meta">
       <span class="meta-badge" id="mode-badge">Focus · Word</span>
       <span id="adaptive-badge" style="display:none">↑ Adapting</span>
@@ -622,10 +622,6 @@
         <div class="done-stat-label">recall checks</div>
       </div>
       <div class="done-stat">
-        <div class="done-stat-val" id="done-correct">—</div>
-        <div class="done-stat-label">correct answers</div>
-      </div>
-      <div class="done-stat">
         <div class="done-stat-val" id="done-time-saved">—</div>
         <div class="done-stat-label">time saved</div>
       </div>
@@ -657,7 +653,6 @@ let focalColor = '#e05a2b';
 
 // session tracking
 let recallCount = 0;
-let correctCount = 0;
 let wpmSamples = [];
 let recallActive = false;
 let recallBuffer = '';
@@ -979,7 +974,6 @@ function renderRecall(data) {
       if (recallAnswered) return;
       recallAnswered = true;
       const isCorrect = i === data.correct;
-      if (isCorrect) correctCount++;
       document.querySelectorAll('.recall-opt').forEach((b, j) => {
         if (j === data.correct) b.classList.add('correct');
         else if (j === i && !isCorrect) b.classList.add('wrong');
@@ -1027,7 +1021,6 @@ function finish() {
   const avgWpm = wpmSamples.length ? Math.round(wpmSamples.reduce((a,b)=>a+b,0)/wpmSamples.length) : wpm;
   document.getElementById('done-avg-wpm').textContent = avgWpm;
   document.getElementById('done-recalls').textContent = recallCount;
-  document.getElementById('done-correct').textContent = recallCount > 0 ? `${correctCount}/${recallCount}` : '—';
 
   // Time saved vs reading at a normal pace
   const normalSecs = (totalWordsInSession / NORMAL_READING_WPM) * 60;
@@ -1055,7 +1048,7 @@ function formatDuration(secs) {
   return remMins ? `${hrs}h ${remMins}m` : `${hrs}h`;
 }
 
-const LIFETIME_KEY = 'flowread_lifetime_saved_secs';
+const LIFETIME_KEY = 'blazereader_lifetime_saved_secs';
 
 function getLifetimeSaved() {
   const v = parseFloat(localStorage.getItem(LIFETIME_KEY));
@@ -1090,7 +1083,6 @@ document.getElementById('start-btn').addEventListener('click', () => {
   recallActive = false;
   recallAnswered = false;
   recallCount = 0;
-  correctCount = 0;
   wpmSamples = [];
   sessionMs = 0;
   totalWordsInSession = wordCount(text);
