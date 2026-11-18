@@ -10,7 +10,7 @@
 
 <h1>⚡ Blaze Reader</h1>
 
-<p><strong>A smart, browser-native RSVP speed reader with AI-powered recall checks.</strong><br/>
+<p><strong>A smart, browser-native  RSVP speed reader with AI-powered recall checks.</strong><br/>
 Read faster. Remember more. No installs. No accounts. No data leaves your browser.</p>
 
 <a href="https://blaze-reader-neon.vercel.app"><strong>→ Try it live</strong></a>
@@ -21,7 +21,7 @@ Read faster. Remember more. No installs. No accounts. No data leaves your browse
 
 ## What is Blaze Reader?
 
-Blaze Reader is a **Rapid Serial Visual Presentation (RSVP)** tool that flashes words or phrases at a configurable speed, helping you tear through text 2–3× faster than traditional reading. Unlike basic RSVP tools, Blaze Reader layers in two cognitive-science-backed features:
+Blaze Reader is  a **Rapid Serial Visual Presentation (RSVP)** tool that flashes words or phrases at a configurable speed, helping you tear through text 2–3× faster than traditional reading. Unlike basic RSVP tools, Blaze Reader layers in two cognitive-science-backed features:
 
 - **Focal letter anchoring** — each word is color-highlighted at its optimal recognition point (the ORP), reducing eye saccade overhead and keeping your focus locked.
 - **AI-powered active recall** — every ~60 words, Claude pauses your session and fires a comprehension question generated from what you just read. This transforms passive consumption into engaged learning.
@@ -75,10 +75,10 @@ The focal letter index is calculated by character length:
 
 | Word length | Focal position |
 |---|---|
-| ≤ 1 char | Index 0 |
-| 2–5 chars | Index 1 |
-| 6–9 chars | Index 2 |
-| 10+ chars | Index 3 |
+| ≤ 1 char | Index 0  |
+| 2–5 chars | Index 1  |
+| 6–9 chars | Index 2  |
+| 10+ chars | Index 3  |
 
 ---
 
